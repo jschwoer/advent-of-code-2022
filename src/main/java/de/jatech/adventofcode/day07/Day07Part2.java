@@ -2,11 +2,7 @@ package de.jatech.adventofcode.day07;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import de.jatech.adventofcode.common.Utils;
 
@@ -20,107 +16,90 @@ public class Day07Part2 {
 	}
 
 	static int solvePuzzle(final List<String> input) {
-		int result = -1;
+		int result = 0;
 
-		Collection<MyDirectory> allDirectories = new ArrayList<>();
-		MyDirectory rootDirectory = new MyDirectory(null, "/");
-		allDirectories.add(rootDirectory);
-		MyDirectory currenDirectory = null;
-		for (int idx = 0; idx < input.size(); idx++) {
-			String line = input.get(idx);
+		int numberOfCols = input.get(0).length();
+		int numberOfRows = input.size();
+		int[][] treeMap = new int[numberOfRows][numberOfCols];
 
-			if (line.startsWith("$")) {
-				String command = line.substring("$ ".length());
-
-				if (command.startsWith("cd ")) {
-					String target = command.substring("cd ".length());
-					switch (target) {
-						case "/":
-							currenDirectory = rootDirectory;
-							break;
-						case "..":
-							currenDirectory = currenDirectory.parent;
-							break;
-						default:
-							currenDirectory = currenDirectory.directories.get(target);
-					}
-				} else if (command.startsWith("ls")) {
-					int dirIdx = idx;
-					while (input.size() > dirIdx + 1 && !input.get(dirIdx + 1).startsWith("$")) {
-						dirIdx++;
-						String lsOutput = input.get(dirIdx);
-						if (lsOutput.startsWith("dir ")) {
-							String name = lsOutput.substring("dir ".length());
-							if (!currenDirectory.directories.containsKey(name)) {
-								MyDirectory directory = new MyDirectory(currenDirectory, name);
-								currenDirectory.directories.put(name, directory);
-								allDirectories.add(directory);
-							}
-						} else {
-							String[] fileParts = lsOutput.split(" ");
-							MyFile myFile = new MyFile(fileParts[1], Integer.parseInt(fileParts[0]));
-							currenDirectory.files.add(myFile);
-						}
-
-					}
-
-					idx = dirIdx;
-				}
+		for (int rowIdx = 0; rowIdx < input.size(); rowIdx++) {
+			String line = input.get(rowIdx);
+			for (int colIdx = 0; colIdx < line.length(); colIdx++) {
+				treeMap[rowIdx][colIdx] = Integer.parseInt("" + line.charAt(colIdx));
 			}
 		}
 
-		for (MyDirectory directory : allDirectories)
-		{
-			System.out.println(directory.name + ": " + directorySize(directory));
+		int maxScore = 0;
+		int score = 1;
+		for (int rowIdx = 0; rowIdx < numberOfRows; rowIdx++) {
+			for (int colIdx = 0; colIdx < numberOfCols; colIdx++) {
+				int height = treeMap[rowIdx][colIdx];
+				int up = treesVisibleUp(treeMap, rowIdx, colIdx);
+				int left = treesVisibleLeft(treeMap, rowIdx, colIdx);
+				int right = treesVisibleRight(treeMap, rowIdx, colIdx);
+				int down = treesVisibleDown(treeMap, rowIdx, colIdx);
+				
+				score = up * down * left * right;
+				maxScore = Math.max(score, maxScore);
+			}
 		}
 
-		int totalSpace = 70000000;
-		int neededSpace = 30000000;
-		int usedSpace = directorySize(rootDirectory);
-		int unusedSpace = totalSpace - usedSpace;
-		int requiredSpace = neededSpace - unusedSpace;
-
-		System.out.println("Used space: " + usedSpace);
-		System.out.println("Unused space: " + unusedSpace);
-		System.out.println("Required space: " + requiredSpace);
-
-		result = allDirectories.stream().mapToInt(Day07Part2::directorySize).filter(i -> i >= requiredSpace).min().getAsInt();
-
-
-		System.out.println(result);
-		return result;
+		return maxScore;
 	}
 
-	static int directorySize(MyDirectory startDirectory) {
-		int result = startDirectory.files.stream().mapToInt(f -> f.size).sum();
-		result += startDirectory.directories.values().stream().mapToInt(Day07Part2::directorySize).sum();
-		return result;
+	private static int treesVisibleUp(int[][] treeMap, int row, int col) {
+		int count = 0;
+		int height = treeMap[row][col];
+		for (int rowIdx = row - 1; rowIdx >= 0; rowIdx--) {
+			if (treeMap[rowIdx][col] >= height) {
+				count++;
+				break;
+			} else {
+				count++;
+			}
+		}
+		return count;
 	}
 
-	static class MyDirectory {
-		String name;
-		MyDirectory parent = null;
-		Map<String, MyDirectory> directories = new HashMap<>();
-		List<MyFile> files = new ArrayList<>();
-
-		public MyDirectory(MyDirectory parent, String name) {
-			this.parent = parent;
-			this.name = name;
+	private static int treesVisibleDown(int[][] treeMap, int row, int col) {
+		int count = 0;
+		int height = treeMap[row][col];
+		for (int rowIdx = row + 1; rowIdx < treeMap.length; rowIdx++) {
+			if (treeMap[rowIdx][col] >= height) {
+				count++;
+				break;
+			} else {
+				count++;
+			}
 		}
+		return count;
 	}
 
-	static class MyFile {
-		String name;
-		int size;
-
-		public MyFile(String name, int size) {
-			this.name = name;
-			this.size = size;
+	private static int treesVisibleLeft(int[][] treeMap, int row, int col) {
+		int count = 0;
+		int height = treeMap[row][col];
+		for (int colIdx = col - 1; colIdx >= 0; colIdx--) {
+			if (treeMap[row][colIdx] >= height) {
+				count++;
+				break;
+			} else {
+				count++;
+			}
 		}
+		return count;
+	}
 
-		@Override
-		public String toString() {
-			return "MyFile [name=" + name + ", size=" + size + "]";
+	private static int treesVisibleRight(int[][] treeMap, int row, int col) {
+		int count = 0;
+		int height = treeMap[row][col];
+		for (int colIdx = col + 1; colIdx < treeMap[row].length; colIdx++) {
+			if (treeMap[row][colIdx] >= height) {
+				count++;
+				break;
+			} else {
+				count++;
+			}
 		}
+		return count;
 	}
 }

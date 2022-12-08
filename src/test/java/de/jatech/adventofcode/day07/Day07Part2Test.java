@@ -13,6 +13,6 @@ public class Day07Part2Test {
 	void testPuzzle() throws Exception {
 		final List<String> list = Utils.readLinesFromFile("day07/input_example.txt");
 
-		assertEquals(24933642, Day07Part2.solvePuzzle(list));
+		assertEquals(8, Day07Part2.solvePuzzle(list));
 	}
 }
